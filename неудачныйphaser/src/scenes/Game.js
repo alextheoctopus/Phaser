@@ -9,7 +9,13 @@ export default class Game extends Phaser.Scene {
 
     bunnyFall;
 
+    bunnyParabole;
+
+    carrot;
+
     platforms;
+
+    target;
 
     moveTo;
 
@@ -47,7 +53,6 @@ export default class Game extends Phaser.Scene {
     create() {
         this.add.image(512, 356, 'background');
         this.add.image(130, 650, 'platform').setScale(0.6);
-        this.add.image(890, 460, 'target').setScale(0.8, 1);
         this.add.image(610, 590, 'platform2').setScale(0.6, 0.3);
         this.add.image(35, 740, 'background1').setScale(0.5);
         this.add.image(100, 720, 'background2').setScale(0.3);
@@ -66,32 +71,36 @@ export default class Game extends Phaser.Scene {
         this.add.image(100 + 900, 720, 'background2').setScale(0.3);
         this.add.image(165 + 900, 690, 'background3').setScale(0.3);
 
-        this.movingCarrot();
+        /* this.movingCarrot(); */
 
         this.player = this.physics.add.sprite(150, 574, 'beardman').setScale(0.9);
+        this.target = this.physics.add.sprite(890, 460, 'target').setScale(0.8, 1);
 
-        this.bunnysWalkF();
+        this.target.body.immovable = true;
+        this.bunnyWalkAnim();
         setTimeout(
             () => {
                 this.spriteDestroy(this.bunnysWalk);
-                this.bunnysJumpF();
+                this.bunnyJumpAnim();
             },
             2000);
         setTimeout(
             () => {
-                this.bunnysFallF();
+                this.bunnyFallAnim();
             },
             2520
-        )
-        //this.bunnyReincarnationF();
+        );
+        setTimeout(
+            () => {
+                this.bunnyAtStart();
 
+            },
+            5200);
     }// is called once all the assets for the Scene have been loaded.
 
-
-
     movingCarrot() {
-        var carrot = this.physics.add.sprite(210, 570, 'carrot').setScale(0.7);
-
+        this.carrot = this.physics.add.sprite(210, 570, 'carrot').setScale(0.7);
+        let carrot = this.carrot;
         carrot.moveTo = this.plugins.get('rexmovetoplugin').add(carrot).on('complete', function () {
             console.log('Reach target');
         });
@@ -128,9 +137,10 @@ export default class Game extends Phaser.Scene {
             carrot.setGravityY(g);
 
         });
+
     }
 
-    bunnysWalkF() {
+    bunnyWalkAnim() {
         this.anims.create({
             key: "walk",
             frameRate: 5,
@@ -148,7 +158,7 @@ export default class Game extends Phaser.Scene {
 
     }
 
-    bunnysJumpF() {
+    bunnyJumpAnim() {
 
         this.anims.create({
             key: "jump",
@@ -168,20 +178,44 @@ export default class Game extends Phaser.Scene {
         });
     }
 
-    bunnysFallF() {
+    bunnyFallAnim() {
         this.bunnyFall = this.physics.add.sprite(710, 480, 'bunnyfall').setScale(0.38);
         this.spriteDestroy(this.bunnysJump);
         this.bunnyFall.setVelocity(
-            60, -80
+            63, -75
         );
-        this.bunnyFall.setGravityY(200);
+        this.bunnyFall.setGravityY(180);
     }
 
-   /*  bunnyReincarnationF() {
+    bunnyAtStart() {
         this.spriteDestroy(this.bunnyFall);
-        this.bunnyFall = this.physics.add.sprite(710, 480, 'bunnyfall').setScale(0.38);
-        
-    } */
+        this.bunnyParabole = this.physics.add.sprite(450, 712, 'bunnyfall').setScale(0.45);
+        this.bunnyParabole.setVelocity(
+            -50, -500
+        );
+        this.bunnyParabole.setGravityY(400);
+        this.movingCarrot();
+        this.physics.add.collider(this.bunnyParabole, this.carrot, () => {
+            this.bunnyParabole.setVelocity(
+                700, 100
+            );
+
+            this.physics.add.collider(this.bunnyParabole, this.target, () => {
+                if (this.bunnyParabole.body.touching.right) {
+                    //this.physics.world.removeCollider(this.bunnyParabole, this.carrot); там если морковка дважды прилетит в зайца то они опять столкнутся
+                    this.bunnyParabole.setVelocity(
+                        0, 0
+                    );
+                    this.bunnyParabole.setGravityY(0);
+                    this.bunnyParabole.body.immovable = true;
+                };
+            });//можно в отдельную функцию весь этот коллбэк вынести
+
+        });
+
+    }
+
+
 
     spriteDestroy(sprite) {
         sprite.destroy();
