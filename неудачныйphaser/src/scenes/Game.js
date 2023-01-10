@@ -19,6 +19,10 @@ export default class Game extends Phaser.Scene {
 
     moveTo;
 
+    carSound;
+
+    bunnySound;
+
     constructor() {
         super('game');//Every Scene has to define a unique key
 
@@ -26,21 +30,21 @@ export default class Game extends Phaser.Scene {
 
     preload() {// is called to allow us to specify images, audio, or other assets to load before starting the Scene. 
         //this.load.image('background', '../assets/background/backgroundColorForest.png');
-        this.load.image('background', '../assets/background/backgroundCastles.png');
-        this.load.image('platform', '../assets/platform/ground_wood.png');
-        this.load.image('beardman', '../assets/beardman/adventurer_jump.png');
-        this.load.image('target', '../assets/target/target.png');
-        this.load.image('carrot', '../assets/carrot/carrot.png');
+        this.load.image('background', 'assets/background/backgroundCastles.png');
+        this.load.image('platform', 'assets/platform/ground_wood.png');
+        this.load.image('beardman', 'assets/beardman/adventurer_jump.png');
+        this.load.image('target', 'assets/target/target.png');
+        this.load.image('carrot', 'assets/carrot/carrot.png');
         this.load.plugin('rexmovetoplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexmovetoplugin.min.js', true);
-        this.load.image('platform2', '../assets/platform/ground_grass.png');
-        this.load.image('background1', '../assets/background/foliagePack_038.png');
-        this.load.image('background2', '../assets/background/foliagePack_039.png');
-        this.load.image('background3', '../assets/background/foliagePack_042.png');
-        this.load.image('background4', '../assets/background/foliagePack_043.png');
-        this.load.image('background5', '../assets/background/foliagePack_052.png');
-        this.load.image('background6', '../assets/background/foliagePack_053.png');
-        this.load.image('bunnyfall', '../assets/bunnys/bunny2_jump.png')
-        this.load.spritesheet('bunnyswalk', '../assets/bunnys/walk.png', {
+        this.load.image('platform2', 'assets/platform/ground_grass.png');
+        this.load.image('background1', 'assets/background/foliagePack_038.png');
+        this.load.image('background2', 'assets/background/foliagePack_039.png');
+        this.load.image('background3', 'assets/background/foliagePack_042.png');
+        this.load.image('background4', 'assets/background/foliagePack_043.png');
+        this.load.image('background5', 'assets/background/foliagePack_052.png');
+        this.load.image('background6', 'assets/background/foliagePack_053.png');
+        this.load.image('bunnyfall', 'assets/bunnys/bunny2_jump.png')
+        this.load.spritesheet('bunnyswalk', 'assets/bunnys/walk.png', {
             frameWidth: 123,
             frameHeight: 202
         });
@@ -48,6 +52,11 @@ export default class Game extends Phaser.Scene {
             frameWidth: 140,
             frameHeight: 191
         });
+        /////////
+        //audio//
+        /////////
+        this.load.audio('soundCarrot', 'assets/audio/footstep00.ogg');
+        this.load.audio('bunnySound', 'assets/audio/Steel jingles/jingles_STEEL10.ogg');
     }
 
     create() {
@@ -70,11 +79,15 @@ export default class Game extends Phaser.Scene {
         this.add.image(35 + 900, 740, 'background1').setScale(0.5);
         this.add.image(100 + 900, 720, 'background2').setScale(0.3);
         this.add.image(165 + 900, 690, 'background3').setScale(0.3);
+        this.add.image(890, 460, 'target').setScale(0.8, 1);
 
-        /* this.movingCarrot(); */
 
         this.player = this.physics.add.sprite(150, 574, 'beardman').setScale(0.9);
-        this.target = this.physics.add.sprite(890, 460, 'target').setScale(0.8, 1);
+        this.target = this.add.rectangle(890, 460, 2, 300/* , '#FFF' */);
+        this.physics.add.existing(this.target);
+        //audio
+        this.carSound = this.sound.add('soundCarrot');
+        this.bunnySound=this.sound.add('bunnySound');
 
         this.target.body.immovable = true;
         this.bunnyWalkAnim();
@@ -105,27 +118,24 @@ export default class Game extends Phaser.Scene {
             console.log('Reach target');
         });
 
+        let carSound = this.carSound;
         const g = 400;
         this.input.on('pointerdown', function (pointer) {
-            //carrot.setGravity(100);
+            carSound.play();
             let v0 = 600;
             let alpha = Math.atan((570 - pointer.y) / (pointer.x - 210));
-            // let tFlight = 0;
             let velocityX = 0;
             let velocityY0 = 0;
             console.log(pointer.x, pointer.y)
 
             if (pointer.y < 570 && pointer.x > 210) {
-                /// tFlight = (2 * v0 * Math.sin(alpha)) / g;
                 velocityX = v0 * Math.cos(alpha);
                 velocityY0 = - v0 * Math.sin(alpha);
 
             } else if (pointer.x <= 210) {
-                //tFlight = (2 * v0 * Math.sin(Math.PI / 2)) / g;
                 velocityX = v0 * Math.cos(Math.PI / 2);
                 velocityY0 = - v0 * Math.sin(Math.PI / 2);
             } else if (pointer.y >= 570 && pointer.x >= 210) {
-                //tFlight = (2 * v0) / g;
                 velocityX = v0 * Math.cos(0);
                 velocityY0 = 0;
             }
@@ -145,6 +155,9 @@ export default class Game extends Phaser.Scene {
             key: "walk",
             frameRate: 5,
             frames: this.anims.generateFrameNumbers("bunnyswalk", { start: 1, end: 0 }),
+            /* callback: function () {
+                this.carSound.play();
+            }, */
         });
         this.bunnysWalk = this.add.sprite(540, 540, 'bunnyswalk').setScale(0.38);
         this.bunnysWalk.play({ key: 'walk', repeat: 4 })
@@ -196,13 +209,15 @@ export default class Game extends Phaser.Scene {
         this.bunnyParabole.setGravityY(400);
         this.movingCarrot();
         this.physics.add.collider(this.bunnyParabole, this.carrot, () => {
+            this.carSound.play();
             this.bunnyParabole.setVelocity(
                 700, 100
             );
 
             this.physics.add.collider(this.bunnyParabole, this.target, () => {
                 if (this.bunnyParabole.body.touching.right) {
-                    //this.physics.world.removeCollider(this.bunnyParabole, this.carrot); там если морковка дважды прилетит в зайца то они опять столкнутся
+                    this.bunnySound.play();
+                    this.physics.world.removeCollider(this.bunnyParabole, this.carrot); //там если морковка дважды прилетит в зайца, то они опять столкнутся,не работает
                     this.bunnyParabole.setVelocity(
                         0, 0
                     );
@@ -221,4 +236,3 @@ export default class Game extends Phaser.Scene {
         sprite.destroy();
     }
 }
-
